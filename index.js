@@ -1,14 +1,17 @@
 require('dotenv').config(); // Laster inn miljøvariabler fra .env
 const { Client, GatewayIntentBits } = require('discord.js');
 const cron = require('node-cron');
-const fetch = require('node-fetch'); // Sørg for at du har installert denne pakken
+const fetch = require('node-fetch');
+const fs = require('fs');
 
 // Hent miljøvariabler
 const token = process.env.TOKEN;
 const channelId = process.env.CHANNEL_ID;
 const roleId = process.env.ROLE_ID;
+
 const TIME_API_URL = "https://timeapi.io/api/Time/current/zone?timeZone=Europe/Oslo";
 const HOLIDAY_API_URL = "https://date.nager.at/Api/v2/PublicHolidays";
+const HOLIDAY_FILE = "holidays.json";
 
 // Debugging: Sjekk om variablene blir hentet riktig
 if (!token || !channelId || !roleId) {
@@ -33,44 +36,80 @@ async function getCurrentOsloTime() {
   }
 }
 
-// Funksjon for å sjekke om det er en rød dag i Norge
-async function isPublicHoliday() {
+// Funksjon for å hente og lagre helligdager
+async function fetchAndStoreHolidays() {
   try {
     const currentYear = new Date().getFullYear();
+    
+    // Sjekk om filen eksisterer og allerede har data for inneværende år
+    if (fs.existsSync(HOLIDAY_FILE)) {
+      const fileData = JSON.parse(fs.readFileSync(HOLIDAY_FILE, "utf8"));
+      if (fileData.year === currentYear) {
+        console.log("Helligdager er allerede oppdatert for dette året.");
+        return fileData.dates;
+      }
+    }
+
+    // Hent helligdager fra API-et
     const response = await fetch(`${HOLIDAY_API_URL}/${currentYear}/NO`);
     const holidays = await response.json();
     
-    // Få dagens dato i formatet YYYY-MM-DD
-    const today = (await getCurrentOsloTime()).date;
+    // Konverter til en liste med datoer
+    const holidayDates = holidays.map(holiday => holiday.date);
 
-    // Sjekk om dagens dato finnes i listen over helligdager
-    return holidays.some(holiday => holiday.date === today);
+    // Lagre til fil
+    fs.writeFileSync(HOLIDAY_FILE, JSON.stringify({ year: currentYear, dates: holidayDates }, null, 2));
+    console.log("Helligdager oppdatert og lagret.");
+
+    return holidayDates;
   } catch (error) {
     console.error("Feil ved henting av helligdager:", error);
-    return false;
+    return [];
   }
 }
 
-// Funksjon for å sende lunsjmelding hvis det ikke er helg eller helligdag
+// Funksjon for å sjekke om det er en rød dag eller 24. desember
+async function isNonWorkingDay() {
+  try {
+    const osloTime = await getCurrentOsloTime();
+    if (!osloTime) return true; // Hvis vi ikke kan hente tid, sender vi ikke varsel
+
+    const today = osloTime.date; // YYYY-MM-DD
+    const dayOfWeek = osloTime.dayOfWeek; // "Monday", "Tuesday", etc.
+
+    // Ikke varsle på helg
+    if (dayOfWeek === "Saturday" || dayOfWeek === "Sunday") {
+      console.log("Det er helg, ingen varsling sendes.");
+      return true;
+    }
+
+    // Ikke varsle på 24. desember
+    if (today.endsWith("-12-24")) {
+      console.log("Det er 24. desember, ingen varsling sendes.");
+      return true;
+    }
+
+    // Sjekk om det er en helligdag
+    const holidays = await fetchAndStoreHolidays();
+    if (holidays.includes(today)) {
+      console.log("Det er en helligdag, ingen varsling sendes.");
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Feil ved sjekk av arbeidsdag:", error);
+    return true; // Standard til å ikke sende varsling hvis vi ikke kan sjekke
+  }
+}
+
+// Funksjon for å sende lunsjmelding hvis det ikke er helg, helligdag eller 24. desember
 async function sendLunchMessage() {
+  if (await isNonWorkingDay()) return;
+
   const osloTime = await getCurrentOsloTime();
   if (!osloTime) return;
 
-  const today = osloTime.date; // YYYY-MM-DD
-  const dayOfWeek = osloTime.dayOfWeek; // "Monday", "Tuesday", etc.
-
-  if (dayOfWeek === "Saturday" || dayOfWeek === "Sunday") {
-    console.log("Det er helg, ingen varsling sendes.");
-    return;
-  }
-
-  const holiday = await isPublicHoliday();
-  if (holiday) {
-    console.log("Det er en helligdag, ingen varsling sendes.");
-    return;
-  }
-
-  // Send melding hvis det ikke er helg eller helligdag
   const channel = client.channels.cache.get(channelId);
   if (channel) {
     channel.send(`<@&${roleId}> Det er på tide for lunsj! 🍽️`)
