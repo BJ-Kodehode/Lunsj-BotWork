@@ -129,7 +129,7 @@ async function sendLunchMessage() {
 }
 
 // Sett opp cron-jobb for lunsjmelding kl 11:30 Oslo-tid
-cron.schedule("45 10 * * 1-5", async () => { // 10:30 UTC = 11:30 Oslo tid
+cron.schedule("30 11 * * 1-5", async () => { // 10:30 UTC = 11:30 Oslo tid
   console.log("Sjekker om lunsjmelding skal sendes...");
   await sendLunchMessage();
 });
