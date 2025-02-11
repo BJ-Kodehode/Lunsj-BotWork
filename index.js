@@ -1,8 +1,16 @@
 require('dotenv').config(); // Laster inn miljøvariabler fra .env
 const { Client, GatewayIntentBits } = require('discord.js');
 const cron = require('node-cron');
-const fetch = require('node-fetch');
 const fs = require('fs');
+
+// Sjekk om fetch er tilgjengelig i den nåværende versjonen av Node.js
+let fetch;
+
+if (typeof globalThis.fetch === 'function') {
+  fetch = globalThis.fetch;  // Bruk den innebygde fetch (Node.js 17.5+)
+} else {
+  fetch = require('node-fetch');  // Bruk node-fetch for eldre versjoner
+}
 
 // Hent miljøvariabler
 const token = process.env.TOKEN;
@@ -121,7 +129,7 @@ async function sendLunchMessage() {
 }
 
 // Sett opp cron-jobb for lunsjmelding kl 11:30 Oslo-tid
-cron.schedule("30 10 * * 1-5", async () => { // 10:30 UTC = 11:30 Oslo tid
+cron.schedule("45 10 * * 1-5", async () => { // 10:30 UTC = 11:30 Oslo tid
   console.log("Sjekker om lunsjmelding skal sendes...");
   await sendLunchMessage();
 });
