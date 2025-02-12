@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
 
+// Sjekk om fetch er tilgjengelig i den nåværende versjonen av Node.js
 let fetch;
 if (typeof globalThis.fetch === 'function') {
   fetch = globalThis.fetch;
@@ -10,24 +11,29 @@ if (typeof globalThis.fetch === 'function') {
   fetch = require('node-fetch');
 }
 
+// Hent miljøvariabler fra .env-filen
 const token = process.env.TOKEN;
 const channelId = process.env.CHANNEL_ID;
 const roleId = process.env.ROLE_ID;
 
+// API-er for tids- og helligdagsinformasjon
 const TIME_API_URL = "https://timeapi.io/api/Time/current/zone?timeZone=Europe/Oslo";
 const ALT_TIME_API = "http://worldtimeapi.org/api/timezone/Europe/Oslo";
 const HOLIDAY_API_URL = "https://date.nager.at/Api/v2/PublicHolidays";
 const HOLIDAY_FILE = "holidays.json";
 
+// Sjekk om nødvendige miljøvariabler er satt
 if (!token || !channelId || !roleId) {
   console.error('Feil: Token, Channel ID eller Role ID mangler! Sjekk at .env-filen er riktig konfigurert.');
   process.exit(1);
 }
 
+// Opprett en ny Discord-klient
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
 
+// Hjelpefunksjon for å prøve å hente data fra et API flere ganger
 async function fetchWithRetry(url, retries = 3, delay = 1000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -42,6 +48,7 @@ async function fetchWithRetry(url, retries = 3, delay = 1000) {
   return null;
 }
 
+// Hent nåværende dato og tid fra Time API, med WorldTimeAPI som backup
 async function getCurrentOsloTime() {
   let data = await fetchWithRetry(TIME_API_URL);
   
@@ -58,10 +65,12 @@ async function getCurrentOsloTime() {
   return data;
 }
 
+// Hent og lagre helligdager i en lokal fil
 async function fetchAndStoreHolidays() {
   try {
     const currentYear = new Date().getFullYear();
     
+    // Sjekk om filen eksisterer og allerede har data for inneværende år
     if (fs.existsSync(HOLIDAY_FILE)) {
       const fileData = JSON.parse(fs.readFileSync(HOLIDAY_FILE, "utf8"));
       if (fileData.year === currentYear) {
@@ -70,10 +79,14 @@ async function fetchAndStoreHolidays() {
       }
     }
 
+    // Hent helligdager fra API-et
     const response = await fetch(`${HOLIDAY_API_URL}/${currentYear}/NO`);
     const holidays = await response.json();
     
+    // Konverter til en liste med datoer
     const holidayDates = holidays.map(holiday => holiday.date);
+    
+    // Lagre til fil
     fs.writeFileSync(HOLIDAY_FILE, JSON.stringify({ year: currentYear, dates: holidayDates }, null, 2));
     console.log("Helligdager oppdatert og lagret.");
 
@@ -84,6 +97,7 @@ async function fetchAndStoreHolidays() {
   }
 }
 
+// Sjekk om det er en helgedag eller rød dag
 async function isNonWorkingDay() {
   try {
     const osloTime = await getCurrentOsloTime();
@@ -92,16 +106,19 @@ async function isNonWorkingDay() {
     const today = osloTime.date;
     const dayOfWeek = osloTime.dayOfWeek;
 
+    // Ikke varsle på helg
     if (dayOfWeek === "Saturday" || dayOfWeek === "Sunday") {
       console.log("Det er helg, ingen varsling sendes.");
       return true;
     }
 
+    // Ikke varsle på julaften
     if (today.endsWith("-12-24")) {
       console.log("Det er 24. desember, ingen varsling sendes.");
       return true;
     }
 
+    // Sjekk om det er en helligdag
     const holidays = await fetchAndStoreHolidays();
     if (holidays.includes(today)) {
       console.log("Det er en helligdag, ingen varsling sendes.");
@@ -115,6 +132,7 @@ async function isNonWorkingDay() {
   }
 }
 
+// Send lunsjmelding dersom det er en arbeidsdag
 async function sendLunchMessage() {
   if (await isNonWorkingDay()) return;
 
@@ -131,11 +149,13 @@ async function sendLunchMessage() {
   }
 }
 
+// Planlegg lunsjvarsling kl. 11:30 Oslo-tid (10:30 UTC) på hverdager
 cron.schedule("30 11 * * 1-5", async () => {
   console.log("Sjekker om lunsjmelding skal sendes...");
   await sendLunchMessage();
 });
 
+// Logg inn Discord-boten
 client.login(token)
   .then(() => console.log("Boten er logget inn!"))
   .catch(err => console.error("Kunne ikke logge inn:", err));
