@@ -1,12 +1,20 @@
-require('dotenv').config();
-const client = require('./client');
-const { scheduleLunchNotification } = require('./lunchNotifier');
+const { REST, Routes } = require('discord.js');
+const { token, clientId } = require('./config');
+const command = require('./commands');
 
-client.once("ready", () => {
-  console.log("Boten er klar og kjører!");
-  scheduleLunchNotification();
-});
+const rest = new REST({ version: '10' }).setToken(token);
 
-client.login(process.env.TOKEN)
-  .then(() => console.log("Boten er logget inn!"))
-  .catch(err => console.error("Kunne ikke logge inn:", err));
+async function registerCommands() {
+  try {
+    console.log("Registrerer Slash Commands...");
+    await rest.put(
+      Routes.applicationCommands(clientId),
+      { body: [command.data.toJSON()] }
+    );
+    console.log("Slash Commands registrert!");
+  } catch (error) {
+    console.error("Feil ved registrering av commands:", error);
+  }
+}
+
+registerCommands();
