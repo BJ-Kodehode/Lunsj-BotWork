@@ -1,20 +1,30 @@
-const { REST, Routes } = require('discord.js');
-const { token, clientId } = require('./config');
-const command = require('./commands');
+require('dotenv').config(); // Laster inn miljøvariabler fra .env
+const { Client, GatewayIntentBits } = require('discord.js');
+const cron = require('node-cron');
+const fs = require('fs');
 
-const rest = new REST({ version: '10' }).setToken(token);
+// Feilsøking: Sjekk om TOKEN er lastet inn
+console.log("Bot token:", process.env.TOKEN ? "Lest inn" : "Mangler!");
 
-async function registerCommands() {
-  try {
-    console.log("Registrerer Slash Commands...");
-    await rest.put(
-      Routes.applicationCommands(clientId),
-      { body: [command.data.toJSON()] }
-    );
-    console.log("Slash Commands registrert!");
-  } catch (error) {
-    console.error("Feil ved registrering av commands:", error);
-  }
+// Hent miljøvariabler
+const token = process.env.TOKEN;
+const channelId = process.env.CHANNEL_ID;
+const roleId = process.env.ROLE_ID;
+
+if (!token || !channelId || !roleId) {
+  console.error('Feil: Token, Channel ID eller Role ID mangler! Sjekk .env-filen.');
+  process.exit(1);
 }
 
-registerCommands();
+// Opprett en ny Discord-klient
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+});
+
+client.once("ready", () => {
+  console.log("Boten er klar og kjører!");
+});
+
+client.login(token)
+  .then(() => console.log("Boten er logget inn!"))
+  .catch(err => console.error("Kunne ikke logge inn:", err));
