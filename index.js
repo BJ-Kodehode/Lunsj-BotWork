@@ -1,4 +1,8 @@
 require('dotenv').config(); // Laster inn miljøvariabler fra .env
+require('dotenv').config();
+console.log("TOKEN:", process.env.TOKEN ? "Lest inn" : "Mangler!");
+console.log("CHANNEL_ID:", process.env.CHANNEL_ID ? "Lest inn" : "Mangler!");
+console.log("ROLE_ID:", process.env.ROLE_ID ? "Lest inn" : "Mangler!");
 const { Client, GatewayIntentBits } = require('discord.js');
 const cron = require('node-cron');
 const fs = require('fs');
