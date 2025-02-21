@@ -1,0 +1,8 @@
+[2025-02-20T13:42:00.277Z] Feil ved henting av data fra https://timeapi.io/api/Time/current/zone?timeZone=Europe/Oslo (forsøk 1): fetch is not a function
+[2025-02-20T13:42:01.288Z] Feil ved henting av data fra https://timeapi.io/api/Time/current/zone?timeZone=Europe/Oslo (forsøk 2): fetch is not a function
+[2025-02-20T13:42:02.296Z] Feil ved henting av data fra https://timeapi.io/api/Time/current/zone?timeZone=Europe/Oslo (forsøk 3): fetch is not a function
+[2025-02-20T13:42:02.296Z] Time API feilet, bytter til WorldTimeAPI...
+[2025-02-20T13:42:02.298Z] Feil ved henting av data fra http://worldtimeapi.org/api/timezone/Europe/Oslo (forsøk 1): fetch is not a function
+[2025-02-20T13:42:03.303Z] Feil ved henting av data fra http://worldtimeapi.org/api/timezone/Europe/Oslo (forsøk 2): fetch is not a function
+[2025-02-20T13:42:04.315Z] Feil ved henting av data fra http://worldtimeapi.org/api/timezone/Europe/Oslo (forsøk 3): fetch is not a function
+[2025-02-20T13:47:00.688Z] Feil ved sjekk av arbeidsdag: getCurrentOsloTime is not a function
