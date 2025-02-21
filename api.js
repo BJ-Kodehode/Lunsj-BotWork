@@ -1,5 +1,8 @@
-import fetch from 'node-fetch';
- // Importer node-fetch
+const fs = require('fs');
+const fetch = require('node-fetch');
+const config = require('./config'); // Krever CommonJS-modul
+
+
 const fs = require('fs');
 const log = require('./logger');
 
