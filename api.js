@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const config = require('./config'); // Krever CommonJS-modul
 
 
-const fs = require('fs');
+
 const log = require('./logger');
 
 const { TIME_API_URL, ALT_TIME_API, HOLIDAY_API_URL, HOLIDAY_FILE } = require('./config');
