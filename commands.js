@@ -5,12 +5,12 @@ module.exports = {
     .setDescription('Sender en lunsjmelding manuelt'),
   
   async execute(interaction) {
-    await interaction.reply("Prøver å sende lunsjmelding...");
+    await interaction.deferReply();
     try {
       await sendLunchMessage();
-      interaction.followUp("Lunsjmelding sendt!");
+      await interaction.editReply("Lunsjmelding sendt!");
     } catch (error) {
-      interaction.followUp(`Feil: ${error.message}`);
+      await interaction.editReply(`Feil: ${error.message}`);
     }
   },
 };
