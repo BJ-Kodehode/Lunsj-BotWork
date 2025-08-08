@@ -37,7 +37,7 @@ client.login(token)
   .then(() => console.log("Boten er logget inn!"))
   .catch(err => console.error("Kunne ikke logge inn:", err));
 
-  const { getCurrentOsloTime } = require('./api');
+  const { getCurrentOsloTime } = require('./timeUtils');
 
 
   // Cron-jobben som kjører på spesifisert tid (eks. 11:30)
